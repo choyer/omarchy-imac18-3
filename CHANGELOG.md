@@ -2,6 +2,10 @@
 
 What changed for someone running the patcher, newest first. Small fixes count. The commit history has the detail.
 
+## 2026-11-21
+
+- **The disk-unlock prompt and boot logo come out at a sensible size at 5K.** Plymouth picks its scale from the panel's pixel density, and at 5120x2880 (217 dpi) it drew the password prompt and the boot and shutdown splash at 2x, larger than anything on the desktop at its 1.67 scale. The new `splash` module sets `DeviceScale=1` in `/etc/plymouth/plymouthd.conf` and rebuilds the boot image. Omarchy's theme switch leaves the setting alone. `--remove splash` takes back only the line it wrote. Run `./scripts/imac-patcher --apply splash` and reboot.
+
 ## 2026-11-20
 
 - **`--remove color` keeps your scale.** Since the colour rule moved to its own block, the iMac panel's scale often lived only there, so removing wide-gamut colour dropped the panel back to Omarchy's default scale. Removal now leaves a plain `eDP-1` rule with the same scale (no P3, no 10-bit); applying colour again takes it back into the block.

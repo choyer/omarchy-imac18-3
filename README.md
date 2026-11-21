@@ -109,6 +109,7 @@ The patcher shows what's applied, what isn't, and lets you pick — **nothing is
 
 ```bash
 ./scripts/imac-patcher --apply 5k      # native 5K (rebuilds only the amdgpu module)
+./scripts/imac-patcher --apply splash  # disk-unlock prompt and boot logo at 1x on the 5K panel, not 2x
 ./scripts/imac-patcher --apply audio   # speakers, mics, EarPods + buttons
 ./scripts/imac-patcher --apply vram    # ggml/Vulkan tools off the 256 MiB CPU-visible window
 ./scripts/imac-patcher --apply record  # Omarchy's screen recordings at 1080p, full speed (the Radeon encodes 4K at ~29 fps)

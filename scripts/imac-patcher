@@ -82,7 +82,7 @@ headers_pkg() { echo "$(cat "/usr/lib/modules/$1/pkgbase" 2>/dev/null || echo li
 # they are the same on every machine. Those belong in a separate tweaks tool, which
 # brings its own tool and its own bar widget. This is a one-time run per
 # machine, so it stays a terminal thing.
-MODULES=(audio color vram record autobright suspend gpureset boot 5k macos)
+MODULES=(audio color vram record autobright suspend gpureset boot 5k splash macos)
 # Retired: wifi (the Broadcom handshake fix) -- Omarchy ships it for every Mac
 # since omacom/omarchy#6652, in the same /etc/modprobe.d/brcmfmac.conf.
 
@@ -1032,6 +1032,49 @@ mod_5k_remove() {
     fi
     sync_boot_files && verify_cmdline "" 'amdgpu.tiled_stitch=1'
     say "reboot to return to stock"
+}
+
+# ═══════════════════════ module: splash ════════════════════════════════════
+# Plymouth picks its own scale from the panel's pixel density, and at 5K
+# (217 dpi) it draws the disk-unlock prompt and the boot and shutdown splash
+# at 2x: about 1.2x the size the desktop shows things at its 1.67 scale.
+# DeviceScale=1 keeps it at 1x. The plymouth hook copies plymouthd.conf into
+# the boot image, so it takes a rebuild. Omarchy's theme switch
+# (plymouth-set-default-theme) rewrites only the Theme= line, so the setting
+# stays. Ours is the line after the marker; a DeviceScale set by hand counts
+# as applied, and --remove leaves it.
+PLY_CONF=/etc/plymouth/plymouthd.conf
+PLY_MARK="# imac-patcher: splash at 1x (the line below)"
+PLY_SCALE_RE='^DeviceScale[[:blank:]]*=[[:blank:]]*1[[:blank:]]*$'
+mod_splash_title() { echo "Unlock screen and splash at 1x"; }
+mod_splash_tier()  { echo boot; }
+mod_splash_desc()  { echo "At 5K, Plymouth draws the disk-unlock prompt and the boot/shutdown logo at 2x, oversized next to the desktop. Sets DeviceScale=1 in plymouthd.conf and rebuilds the boot image."; }
+splash_ours() { grep -qxF "$PLY_MARK" "$PLY_CONF" 2>/dev/null; }
+mod_splash_detect() {
+    [[ -f $PLY_CONF ]] || { echo n/a; return; }
+    if grep -q "$PLY_SCALE_RE" "$PLY_CONF"; then echo applied; else echo not-applied; fi
+}
+mod_splash_apply() {
+    fallback_snapshot "splash" || return 1
+    # Any other DeviceScale goes; ours sits at the top of [Daemon].
+    sudo sed -i "\|^${PLY_MARK}\$|d; /^DeviceScale[[:blank:]]*=/d" "$PLY_CONF" || return 1
+    if grep -q '^\[Daemon\]' "$PLY_CONF"; then
+        sudo sed -i "/^\[Daemon\]/a ${PLY_MARK}\nDeviceScale=1" "$PLY_CONF" || return 1
+    else
+        printf '[Daemon]\n%s\nDeviceScale=1\n' "$PLY_MARK" | sudo tee -a "$PLY_CONF" >/dev/null || return 1
+    fi
+    sync_boot_files || return 1
+    say "the unlock prompt and splash are at 1x from the next boot"
+}
+mod_splash_remove() {
+    if ! splash_ours; then
+        warn "DeviceScale=1 in $PLY_CONF was not set by the patcher: left as it is"
+        return 0
+    fi
+    fallback_snapshot "removing splash" || return 1
+    sudo sed -i "\|^${PLY_MARK}\$|{N;d}" "$PLY_CONF" || return 1
+    sync_boot_files || return 1
+    say "Plymouth picks its own scale again from the next boot"
 }
 
 # ── boot helpers ───────────────────────────────────────────────────────────

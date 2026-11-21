@@ -116,6 +116,10 @@ when it finds an initialised sibling DRM card. Candidate fix: `DeviceScale=2` in
 `/etc/plymouth/plymouthd.conf` (the visible splash is already 2x). The real bug
 is Plymouth's sibling check.
 
+The `splash` module now sets `DeviceScale=1`, so both renderers draw at 1x with
+the same coordinates: recheck whether the flash still shows, and drop this entry
+if it doesn't.
+
 ## Parked: speaker EQ
 
 Removed on 2026-09-10 — it had come up empty after a cold boot, and the
